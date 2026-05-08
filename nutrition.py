@@ -2,347 +2,174 @@ import streamlit as st
 import math
 
 # =====================================
-# PAGE CONFIG
+# 1. PAGE CONFIG & STYLE (التصميم اللي تحبيه)
 # =====================================
-
-st.set_page_config(
-    page_title="Smart Body Status Report",
-    layout="centered"
-)
-
-# =====================================
-# STYLE
-# =====================================
+st.set_page_config(page_title="Smart Body Status Report", layout="centered")
 
 st.markdown("""
 <style>
+.stApp { background-color: white !important; }
+h1, h2, h3, p, label, .stMarkdown, [data-testid="stMarkdownContainer"] { color: black !important; }
 
-.stApp {
-    background-color: #f5f7fa;
-    color: black;
+/* الزر الأزرق */
+div.stButton > button {
+    background-color: #007BFF !important;
+    color: white !important;
+    font-weight: bold !important;
+    width: 100%; height: 3.5em;
+    border-radius: 10px; border: none; font-size: 18px;
 }
 
-h1 {
-    text-align: center;
-    color: #2c3e50;
+/* الدوائر الملونة */
+.result-circle {
+    border-radius: 50%; width: 110px; height: 110px;
+    display: flex; flex-direction: column; justify-content: center;
+    align-items: center; margin: auto;
+    box-shadow: 0 4px 8px rgba(0,0,0,0.1); background-color: white;
 }
-
-.stButton>button {
-    width: 100%;
-    border-radius: 10px;
-    height: 50px;
-    font-size: 18px;
-}
-
 </style>
 """, unsafe_allow_html=True)
 
 # =====================================
-# TITLE
+# 2. TITLE
 # =====================================
-
 st.title("SMART BODY STATUS REPORT")
 
-
 # =====================================
-# INPUTS
+# 3. INPUTS
 # =====================================
-
 name = st.text_input("Enter your name")
+gender = st.selectbox("Select gender", ["Female", "Male"])
+age = st.number_input("Age", 10, 100, 25)
 
-gender = st.selectbox(
-    "Select your gender",
-    ["Female", "Male"]
-)
+col1, col2 = st.columns(2)
+with col1:
+    height = st.number_input("Height (cm)", 100.0, 250.0, 160.0)
+    waist = st.number_input("Waist (cm)", 20.0, 200.0, 70.0)
+with col2:
+    weight = st.number_input("Weight (kg)", 20.0, 300.0, 60.0)
+    hip = st.number_input("Hip (cm)", 20.0, 200.0, 90.0)
 
-age = st.number_input(
-    "Enter your age",
-    min_value=10,
-    max_value=100
-)
+neck = st.number_input("Neck (cm)", 10.0, 100.0, 35.0)
+activity = st.selectbox("Activity level",
+                        ["Sedentary", "Light Activity", "Moderate Activity", "Very Active", "Athlete"])
+goal = st.selectbox("Goal", ["Lose Fat", "Maintain Weight", "Gain Muscle"])
 
-height = st.number_input("Height (cm)")
-weight = st.number_input("Weight (kg)")
-
-waist = st.number_input("Waist circumference (cm)")
-hip = st.number_input("Hip circumference (cm)")
-neck = st.number_input("Neck circumference (cm)")
-
-activity = st.selectbox(
-    "Select your activity level",
-    [
-        "Sedentary",
-        "Light Activity",
-        "Moderate Activity",
-        "Very Active",
-        "Athlete"
-    ]
-)
-
-goal = st.selectbox(
-    "Select your goal",
-    [
-        "Lose Fat",
-        "Maintain Weight",
-        "Gain Muscle"
-    ]
-)
+activity_map = {"Sedentary": 1.2, "Light Activity": 1.375, "Moderate Activity": 1.55, "Very Active": 1.725,
+                "Athlete": 1.9}
 
 # =====================================
-# ACTIVITY FACTORS
+# 4. CALCULATIONS (المعادلات المنهجية + المعادلة الأمريكية)
 # =====================================
+if st.button("Generate Report"):
 
-activity_map = {
-    "Sedentary": 1.2,
-    "Light Activity": 1.375,
-    "Moderate Activity": 1.55,
-    "Very Active": 1.725,
-    "Athlete": 1.9
-}
-
-# =====================================
-# CALCULATIONS
-# =====================================
-
-if st.button("Generate Smart Report"):
-
-    # BMI
+    # [1] BMI (حساب مؤشر كتلة الجسم - أساسي في المنهج)
     bmi = weight / ((height / 100) ** 2)
-
-    # BMI STATUS
     if bmi < 18.5:
         bmi_status = "Underweight"
-
     elif bmi < 25:
-        bmi_status = "Normal Weight"
-
+        bmi_status = "Normal"
     elif bmi < 30:
         bmi_status = "Overweight"
-
     else:
-        bmi_status = "Obesity"
+        bmi_status = "Obese"
 
-    # =====================================
-    # BMR
-    # =====================================
-
+    # [2] BMR (معادلة ميفلين - أساسية في المنهج)
     if gender == "Female":
-        bmr = (
-            10 * weight
-            + 6.25 * height
-            - 5 * age
-            - 161
-        )
-
+        bmr = 10 * weight + 6.25 * height - 5 * age - 161
     else:
-        bmr = (
-            10 * weight
-            + 6.25 * height
-            - 5 * age
-            + 5
-        )
+        bmr = 10 * weight + 6.25 * height - 5 * age + 5
 
-    # =====================================
-    # TDEE
-    # =====================================
-
+    # [3] TDEE (السعرات المحروقة)
     tdee = bmr * activity_map[activity]
 
-    # =====================================
-    # GOAL CALORIES
-    # =====================================
-
+    # تحديد الهدف
     if goal == "Lose Fat":
         calories = tdee - 300
-
     elif goal == "Gain Muscle":
         calories = tdee + 250
-
     else:
         calories = tdee
 
-    # =====================================
-    # WATER
-    # =====================================
+    # [4] Body Fat (معادلة البحرية الأمريكية - الإضافة الدقيقة لمشروعك)
+    h_in, w_in, n_in, hp_in = height / 2.54, waist / 2.54, neck / 2.54, hip / 2.54
+    try:
+        if gender == "Female":
+            bf = 163.205 * math.log10(w_in + hp_in - n_in) - 97.684 * math.log10(h_in) - 78.387
+        else:
+            bf = 86.010 * math.log10(w_in - n_in) - 70.041 * math.log10(h_in) + 36.76
+    except:
+        bf = 20.0  # قيمة افتراضية في حال الخطأ
 
-    water = weight * 0.035
-
-    # =====================================
-    # WHR
-    # =====================================
-
+    # [5] WHR (نسبة الخصر للحوض - أساسي في المنهج)
     whr = waist / hip
-
-    # =====================================
-    # BODY FAT %
-    # =====================================
-
-    # Convert cm to inches
-    waist_in = waist / 2.54
-    hip_in = hip / 2.54
-    neck_in = neck / 2.54
-    height_in = height / 2.54
-
     if gender == "Female":
-
-        body_fat = (
-            163.205 * math.log10(
-                waist_in + hip_in - neck_in
-            )
-            - 97.684 * math.log10(height_in)
-            - 78.387
-        )
-
+        whr_status = "Healthy" if whr < 0.85 else "High Risk"
     else:
+        whr_status = "Healthy" if whr < 0.90 else "High Risk"
 
-        body_fat = (
-            86.010 * math.log10(
-                waist_in - neck_in
-            )
-            - 70.041 * math.log10(height_in)
-            + 36.76
-        )
-
-    # =====================================
-    # BODY COMPOSITION
-    # =====================================
-
-    fat_mass = weight * (body_fat / 100)
-
+    # [6] Water & Macros (الماء والمغذيات الكبرى)
+    water = weight * 0.033
+    fat_mass = weight * (bf / 100)
     lean_mass = weight - fat_mass
-
-    # Estimated Skeletal Muscle Mass
-    if gender == "Female":
-        smm = lean_mass * 0.50
-
-    else:
-        smm = lean_mass * 0.55
+    protein = weight * 2.0
+    fats = weight * 1.0
+    carbs = max(0, (calories - (protein * 4 + fats * 9)) / 4)
 
     # =====================================
-    # MACROS
+    # 5. OUTPUT DISPLAY (التقرير الكامل اللي حبيته)
     # =====================================
-
-    protein = weight * 2.2
-    fats = weight * 1
-
-    carbs = (
-        calories
-        - (protein * 4 + fats * 9)
-    ) / 4
-
-    # =====================================
-    # REPORT
-    # =====================================
-
     st.divider()
+    st.header("✨ FINAL BODY REPORT")
 
-    st.header("FINAL BODY REPORT")
+    # الدوائر الثلاث الجمالية
+    c1, c2, c3 = st.columns(3)
+    with c1:
+        st.markdown(
+            f'<div class="result-circle" style="border: 5px solid #007BFF;"><span style="font-size:12px; color:gray;">BMI</span><b style="font-size:20px; color:#007BFF;">{bmi:.1f}</b></div>',
+            unsafe_allow_html=True)
+    with c2:
+        st.markdown(
+            f'<div class="result-circle" style="border: 5px solid #FF4B4B;"><span style="font-size:12px; color:gray;">Fat %</span><b style="font-size:20px; color:#FF4B4B;">{bf:.1f}%</b></div>',
+            unsafe_allow_html=True)
+    with c3:
+        st.markdown(
+            f'<div class="result-circle" style="border: 5px solid #28A745;"><span style="font-size:12px; color:gray;">Kcal</span><b style="font-size:18px; color:#28A745;">{int(calories)}</b></div>',
+            unsafe_allow_html=True)
 
     st.write(f"### Name: {name}")
-    st.write(f"### Gender: {gender}")
-    st.write(f"### Age: {age} years old")
-
-    st.write(f"### Height: {height} cm")
-    st.write(f"### Weight: {weight} kg")
+    st.write(f"**Current Status:** {bmi_status}")
 
     st.divider()
-
-    # =====================================
-    # BODY MEASUREMENTS
-    # =====================================
-
-    st.subheader("Body Measurements")
-
-    st.write(f"Your BMI is: **{bmi:.1f}**")
-    st.write(f"Body Status: **{bmi_status}**")
-
-    st.write(
-        f"Estimated Body Fat: "
-        f"**{body_fat:.1f}%**"
-    )
-
-    st.write(
-        f"Estimated Fat Mass: "
-        f"**{fat_mass:.1f} kg**"
-    )
-
-    st.write(
-        f"Lean Body Mass: "
-        f"**{lean_mass:.1f} kg**"
-    )
-
-    st.write(
-        f"Estimated SMM: "
-        f"**{smm:.1f} kg**"
-    )
-
-    st.write(
-        f"Waist-to-Hip Ratio: "
-        f"**{whr:.2f}**"
-    )
+    st.subheader("📊 Detailed Report")
+    col_a, col_b = st.columns(2)
+    with col_a:
+        st.write(f"BMI: **{bmi:.1f}**")
+        st.write(f"Body Fat: **{bf:.1f}%**")
+        st.write(f"WHR: **{whr:.2f}** ({whr_status})")
+    with col_b:
+        st.write(f"Lean Mass: **{lean_mass:.1f} kg**")
+        st.write(f"Fat Mass: **{fat_mass:.1f} kg**")
+        st.write(f"Water Intake: **{water:.1f} L**")
 
     st.divider()
+    st.subheader("🥗 Energy & Macros")
+    st.write(f"Your BMR: **{int(bmr)} kcal**")
+    st.write(f"Maintenance (TDEE): **{int(tdee)} kcal**")
+    st.write(f"Daily Goal: **{int(calories)} kcal**")
 
-    # =====================================
-    # CALORIES
-    # =====================================
-
-    st.subheader("Calories & Energy")
-
-    st.write(
-        f"Your BMR is approximately: "
-        f"**{bmr:.0f} kcal/day**"
-    )
-
-    st.write(
-        f"Your daily calories should be approximately: "
-        f"**{calories:.0f} kcal/day**"
-    )
-
-    st.write(
-        f"Based on your activity level: "
-        f"**{activity}**"
-    )
+    m1, m2, m3 = st.columns(3)
+    m1.metric("Protein", f"{int(protein)}g")
+    m2.metric("Carbs", f"{int(carbs)}g")
+    m3.metric("Fats", f"{int(fats)}g")
 
     st.divider()
+    st.subheader("💡 Recommendations")
+    st.markdown("""
+    * Drink plenty of water (at least 2-3 Liters).
+    * Focus on whole foods and high-quality protein.
+    * Walk at least 10,000 steps daily.
+    * Get enough sleep (7-8 hours).
+    """)
 
-    # =====================================
-    # WATER
-    # =====================================
-
-    st.subheader("Water Intake")
-
-    st.write(
-        f"You should drink approximately "
-        f"**{water:.1f} liters daily**"
-    )
-
-    st.divider()
-
-    # =====================================
-    # MACROS
-    # =====================================
-
-    st.subheader("Recommended Macronutrients")
-
-    st.write(f"Protein: **{protein:.0f} g**")
-    st.write(f"Carbohydrates: **{carbs:.0f} g**")
-    st.write(f"Fats: **{fats:.0f} g**")
-
-    st.divider()
-
-    # =====================================
-    # RECOMMENDATIONS
-    # =====================================
-
-    st.subheader("General Recommendations")
-
-    st.write("• Sleep 7–8 hours daily")
-    st.write("• Maintain regular physical activity")
-    st.write("• Stay hydrated throughout the day")
-    st.write("• Consume enough protein daily")
-    st.write("• Include strength training weekly")
-
-    st.divider()
-
-    st.success("Smart Body Report Generated Successfully")
+    st.success("Report generated successfully!")
